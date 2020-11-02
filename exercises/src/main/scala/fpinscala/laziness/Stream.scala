@@ -33,28 +33,31 @@ trait Stream[+A] {
       case Cons(h, t) => go(t(), List(h()))
     }
 
-    go (this, List.empty).reverse
+    go(this, List.empty).reverse
   }
 
   def take(n: Int): Stream[A] = this match {
-      case Cons(h,t) if (n>1) => cons(h(), t().take(n-1))
-      case Cons(_, _) => this
-      case Empty => empty
-    }
+    case Cons(h, t) if (n > 1) => cons(h(), t().take(n - 1))
+    case Cons(_, _) => this
+    case Empty => empty
+  }
 
   def drop(n: Int): Stream[A] = this match {
-    case Cons(_,t) if (n>1) => t().drop(n-1)
+    case Cons(_, t) if (n > 1) => t().drop(n - 1)
     case _ => _
   }
 
   def takeWhile(p: A => Boolean): Stream[A] = this match {
-    case Cons(h,t) if (p(h)) => cons(h(), t().takeWhile(p))
+    case Cons(h, t) if (p(h)) => cons(h(), t().takeWhile(p))
     case _ => empty
   }
 
-  def forAll(p: A => Boolean): Boolean = ???
+  def forAll(p: A => Boolean): Boolean = foldRight(true)((a, b) => p(a) && b)
 
-  def headOption: Option[A] = ???
+  def headOption: Option[A] = this match {
+    case Cons(h, _) => Some(h())
+    case _ => None
+  }
 
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
@@ -81,7 +84,16 @@ object Stream {
     if (as.isEmpty) empty
     else cons(as.head, apply(as.tail: _*))
 
-  def from(n: Int): Stream[Int] = ???
+  def constant[A](a: A): Stream[A] = Cons(() => a, () => constant(a))
+
+  def from(n: Int): Stream[Int] = Cons(() => n, () => from(n + 1))
+
+  def fibs(): Stream[Int] = {
+    def fibsN(f0: Int, f1: Int): Stream[Int] =
+      cons(f0 + f1, fibsN(f0 + f1, f0))
+
+    fibsN(0, 1)
+  }
 
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = ???
 }
